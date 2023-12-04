@@ -1,7 +1,7 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 fn main() {
-    let mut sum: u32 = 0;
+    let mut counts: HashMap<u32, usize> = Default::default();
 
     std::io::stdin().lines().for_each(|line| {
         if let Ok(line) = line {
@@ -21,24 +21,34 @@ fn main() {
                 .split_whitespace()
                 .map(|num| num.parse::<u32>().unwrap())
                 .collect::<HashSet<u32>>();
-            let score = line
+            let wins = line
                 .next()
                 .unwrap()
                 .split_whitespace()
                 .map(|num| num.parse::<u32>().unwrap())
-                .fold(0, |mut acc, have| {
-                    if win.contains(&have) {
-                        if acc == 0 {
-                            acc += 1;
-                        } else {
-                            acc *= 2;
-                        }
-                    }
-                    acc
-                });
-            sum += score
+                .filter(|have| win.contains(have))
+                .count();
+
+            if let Some(count) = counts.get_mut(&id) {
+                *count += 1;
+            } else {
+                counts.insert(id, 1);
+            };
+
+            let count = *counts.get_mut(&id).unwrap();
+
+            for i in 1..=wins {
+                let id = id + i as u32;
+                if let Some(next) = counts.get_mut(&id) {
+                    *next += count;
+                } else {
+                    counts.insert(id, count);
+                };
+            }
         }
     });
+
+    let sum: usize = counts.into_values().sum();
 
     println!("{sum}")
 }
