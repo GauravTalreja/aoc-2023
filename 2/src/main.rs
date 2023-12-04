@@ -67,13 +67,27 @@ fn main() {
             None
         })
         .for_each(|game| {
-            if !game
-                .sets
-                .iter()
-                .any(|set| set.red > RED_COUNT || set.blue > BLUE_COUNT || set.green > GREEN_COUNT)
-            {
-                sum += game.id;
-            }
+            let min = game.sets.iter().fold(
+                Set {
+                    red: 0,
+                    green: 0,
+                    blue: 0,
+                },
+                |mut acc, set| {
+                    if set.red > acc.red {
+                        acc.red = set.red;
+                    }
+                    if set.green > acc.green {
+                        acc.green = set.green;
+                    }
+                    if set.blue > acc.blue {
+                        acc.blue = set.blue;
+                    }
+                    acc
+                },
+            );
+            let power = min.red * min.green * min.blue;
+            sum += power;
         });
 
     println!("{sum}")
