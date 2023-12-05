@@ -1,4 +1,6 @@
 use rangemap::RangeMap;
+use rayon::prelude::*;
+use std::ops::Range;
 
 fn main() {
     let mut input = std::io::stdin().lines();
@@ -8,7 +10,16 @@ fn main() {
         .strip_prefix("seeds:")
         .unwrap()
         .split_whitespace()
-        .map(|num| num.parse::<u64>().unwrap());
+        .map(|num| num.parse::<u64>().unwrap())
+        .collect::<Vec<u64>>();
+    let seeds = seeds
+        .chunks_exact(2)
+        .map(|slice| {
+            let start = slice[0];
+            let range = slice[1];
+            start..start + range
+        })
+        .collect::<Vec<Range<u64>>>();
 
     let mut seed_soil = RangeMap::new();
     input
@@ -132,22 +143,36 @@ fn main() {
     //println!("seed_soil:\n{:?}\n\nsoil_fert:\n{:?}\n\nfert_water:\n{:?}\n\nwater_light:\n{:?}\n\nlight_temp:\n{:?}\n\ntemp_humid:\n{:?}\n\nhumid_loc:\n{:?}\n", seed_soil, soil_fert, fert_water, water_light, light_temp, temp_humid, humid_loc);
 
     let min = seeds
-        .map(|seed| {
-            let (seed_range, soil) = seed_soil.get_key_value(&seed).unwrap_or((&(0..0), &0));
-            let soil = soil + (seed - seed_range.start);
-            let (soil_range, fert) = soil_fert.get_key_value(&soil).unwrap_or((&(0..0), &0));
-            let fert = fert + (soil - soil_range.start);
-            let (fert_range, water) = fert_water.get_key_value(&fert).unwrap_or((&(0..0), &0));
-            let water = water + (fert - fert_range.start);
-            let (water_range, light) = water_light.get_key_value(&water).unwrap_or((&(0..0), &0));
-            let light = light + (water - water_range.start);
-            let (light_range, temp) = light_temp.get_key_value(&light).unwrap_or((&(0..0), &0));
-            let temp = temp + (light - light_range.start);
-            let (temp_range, humid) = temp_humid.get_key_value(&temp).unwrap_or((&(0..0), &0));
-            let humid = humid + (temp - temp_range.start);
-            let (humid_range, loc) = humid_loc.get_key_value(&humid).unwrap_or((&(0..0), &0));
-            let loc = loc + (humid - humid_range.start);
-            loc
+        .par_iter()
+        .map(|seed_range| {
+            seed_range
+                .clone()
+                .map(|seed| {
+                    let (seed_range, soil) =
+                        seed_soil.get_key_value(&seed).unwrap_or((&(0..0), &0));
+                    let soil = soil + (seed - seed_range.start);
+                    let (soil_range, fert) =
+                        soil_fert.get_key_value(&soil).unwrap_or((&(0..0), &0));
+                    let fert = fert + (soil - soil_range.start);
+                    let (fert_range, water) =
+                        fert_water.get_key_value(&fert).unwrap_or((&(0..0), &0));
+                    let water = water + (fert - fert_range.start);
+                    let (water_range, light) =
+                        water_light.get_key_value(&water).unwrap_or((&(0..0), &0));
+                    let light = light + (water - water_range.start);
+                    let (light_range, temp) =
+                        light_temp.get_key_value(&light).unwrap_or((&(0..0), &0));
+                    let temp = temp + (light - light_range.start);
+                    let (temp_range, humid) =
+                        temp_humid.get_key_value(&temp).unwrap_or((&(0..0), &0));
+                    let humid = humid + (temp - temp_range.start);
+                    let (humid_range, loc) =
+                        humid_loc.get_key_value(&humid).unwrap_or((&(0..0), &0));
+                    let loc = loc + (humid - humid_range.start);
+                    loc
+                })
+                .min()
+                .unwrap()
         })
         .min()
         .unwrap();
