@@ -52,10 +52,10 @@ pub enum Rank {
     Five,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, PartialOrd, Eq, Ord)]
 pub struct HandRank {
-    pub hand: Hand,
     pub rank: Rank,
+    pub hand: Hand,
 }
 
 impl HandRank {
@@ -175,13 +175,7 @@ fn main() {
             (hand_rank, bid)
         })
         .collect::<Vec<_>>();
-    hands.sort_by(|(hand_rank_1, _), (hand_rank_2, _)| {
-        if hand_rank_1.rank != hand_rank_2.rank {
-            hand_rank_1.rank.cmp(&hand_rank_2.rank)
-        } else {
-            hand_rank_1.hand.cmp(&hand_rank_2.hand)
-        }
-    });
+    hands.sort();
 
     //println!("{:#?}", hands);
 
