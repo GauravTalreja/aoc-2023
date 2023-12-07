@@ -1,5 +1,6 @@
 #[derive(PartialEq, PartialOrd, Eq, Ord, Debug, Clone, Copy)]
 pub enum Card {
+    Joker,
     Two,
     Three,
     Four,
@@ -9,7 +10,6 @@ pub enum Card {
     Eight,
     Nine,
     Ten,
-    Jack,
     Queen,
     King,
     Ace,
@@ -27,7 +27,7 @@ impl Card {
             '8' => Some(Self::Eight),
             '9' => Some(Self::Nine),
             'T' => Some(Self::Ten),
-            'J' => Some(Self::Jack),
+            'J' => Some(Self::Joker),
             'Q' => Some(Self::Queen),
             'K' => Some(Self::King),
             'A' => Some(Self::Ace),
@@ -67,7 +67,7 @@ impl HandRank {
             .match_indices(first)
             .map(|(idx, _)| idx)
             .collect::<Vec<_>>();
-        let rank = match first_matches.len() {
+        let initial_rank = match first_matches.len() {
             4 => Rank::Five,
             3 => Rank::Four,
             2 => {
@@ -127,6 +127,30 @@ impl HandRank {
             }
             _ => unreachable!(),
         };
+        let joker_count = str.matches('J').count();
+        let rank = match joker_count {
+            4 => Rank::Five,
+            3 => match initial_rank {
+                Rank::FullHouse => Rank::Five,
+                Rank::Three => Rank::Four,
+                _ => unreachable!(),
+            },
+            2 => match initial_rank {
+                Rank::FullHouse => Rank::Five,
+                Rank::Two => Rank::Four,
+                Rank::One => Rank::Three,
+                _ => unreachable!(),
+            },
+            1 => match initial_rank {
+                Rank::Four => Rank::Five,
+                Rank::Three => Rank::Four,
+                Rank::Two => Rank::FullHouse,
+                Rank::One => Rank::Three,
+                Rank::High => Rank::One,
+                _ => unreachable!(),
+            },
+            _ => initial_rank,
+        };
 
         let cards = str
             .as_bytes()
@@ -159,7 +183,7 @@ fn main() {
         }
     });
 
-    println!("{:#?}", hands);
+    //println!("{:#?}", hands);
 
     let winnings = hands
         .iter()
