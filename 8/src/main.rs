@@ -1,7 +1,8 @@
+use num::integer::lcm;
 use std::collections::HashMap;
 
-const START: &str = "AAA";
-const END: &str = "ZZZ";
+const START: char = 'A';
+const END: char = 'Z';
 
 fn main() {
     let mut lines = std::io::stdin().lines();
@@ -18,29 +19,40 @@ fn main() {
         })
         .collect();
 
-    let mut element = START;
-    let mut count: usize = 0;
-    let mut chars = instructions.chars();
-    while element != END {
-        count += 1;
+    let elements: Vec<_> = map
+        .clone()
+        .into_keys()
+        .filter(|key| key.chars().nth(2) == Some(START))
+        .collect();
 
-        let mut dir = chars.next();
-        if dir.is_none() {
-            chars = instructions.chars();
-            dir = chars.next();
-        }
+    let steps = elements.iter().map(|element| {
+        let mut element = element.to_owned();
+        let mut count: usize = 0;
+        let mut chars = instructions.chars();
+        while element.chars().nth(2) != Some(END) {
+            count += 1;
 
-        let dir = dir.unwrap();
-        let (left, right) = map.get(element).unwrap();
-        match dir {
-            'L' => {
-                element = left;
+            let mut dir = chars.next();
+            if dir.is_none() {
+                chars = instructions.chars();
+                dir = chars.next();
             }
-            'R' => {
-                element = right;
+
+            let dir = dir.unwrap();
+            let (left, right) = map.get(&element).unwrap();
+            match dir {
+                'L' => {
+                    element = left.to_owned();
+                }
+                'R' => {
+                    element = right.to_owned();
+                }
+                _ => unreachable!(),
             }
-            _ => unreachable!(),
         }
-    }
-    println!("{count}")
+        count
+    });
+
+    let count = steps.fold(1, |acc, step| lcm(acc, step));
+    println!("{count}");
 }
