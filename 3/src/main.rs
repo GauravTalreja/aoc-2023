@@ -1,10 +1,10 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 fn main() {
     let digits = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
 
     let mut numbers = Vec::new();
-    let mut symbols = HashSet::new();
+    let mut gears = HashSet::new();
     let mut lc = 0;
     for line in std::io::stdin().lines() {
         let line = line.unwrap();
@@ -40,15 +40,15 @@ fn main() {
         }
 
         for (idx, c) in line.char_indices() {
-            if !c.is_ascii_digit() && c != '.' {
-                symbols.insert((idx, lc));
+            if c == '*' {
+                gears.insert((idx, lc));
             }
         }
 
         lc += 1;
     }
 
-    let adjacent: HashSet<_> = symbols
+    let adjacent: HashSet<_> = gears
         .iter()
         .flat_map(|&(i, lc)| {
             vec![
@@ -64,9 +64,41 @@ fn main() {
         })
         .collect();
 
-    let sum: u64 = numbers
+    let adjacent: HashMap<_, _> = numbers
         .into_iter()
-        .filter_map(|(k, v)| v.iter().find(|&idx| adjacent.contains(idx)).map(|_| k))
+        .filter_map(|(k, v)| {
+            v.iter()
+                .find(|&idx| adjacent.contains(idx))
+                .map(|&idx| (idx, k))
+        })
+        .collect();
+
+    let sum: u64 = gears
+        .iter()
+        .map(|&(i, lc)| {
+            let filter = vec![
+                (i - 1, lc - 1),
+                (i + 1, lc + 1),
+                (i - 1, lc + 1),
+                (i + 1, lc - 1),
+                (i, lc + 1),
+                (i, lc - 1),
+                (i + 1, lc),
+                (i - 1, lc),
+            ];
+            let filter: Vec<_> = filter
+                .iter()
+                .filter(|idx| adjacent.contains_key(idx))
+                .collect();
+            if filter.len() == 2 {
+                filter
+                    .iter()
+                    .map(|idx| adjacent.get(idx).unwrap())
+                    .product()
+            } else {
+                0
+            }
+        })
         .sum();
 
     println!("{sum}");
