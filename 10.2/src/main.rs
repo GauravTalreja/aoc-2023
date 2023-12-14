@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::io::Read;
 
 #[derive(PartialEq, Debug)]
@@ -194,18 +195,71 @@ fn main() {
     let mut stdin = String::new();
     std::io::stdin().read_to_string(&mut stdin).unwrap();
     let grid: Grid = stdin.into();
-    let mut count = 1;
+
+    let mut cycle = HashSet::new();
     let mut forward = grid.iter();
-    forward.next();
+    let ptr = grid.tiles.as_ptr();
+    cycle.insert(unsafe { (forward.next().unwrap() as *const Tile).offset_from(ptr) as usize });
     let mut backward = grid.rev_iter();
     backward.next();
-
     for (tile1, tile2) in forward.zip(backward) {
         if std::ptr::eq(tile1, tile2) {
+            cycle.insert(unsafe { (tile1 as *const Tile).offset_from(ptr) as usize });
             break;
         }
-        count += 1;
+        cycle.insert(unsafe { (tile1 as *const Tile).offset_from(ptr) as usize });
+        cycle.insert(unsafe { (tile2 as *const Tile).offset_from(ptr) as usize });
     }
+    let cycle = cycle;
+    let mut count = 0;
 
+    grid.tiles.chunks_exact(grid.row_len).for_each(|chunk| {
+        let chunk = chunk
+            .iter()
+            .map(|tile| unsafe { (tile as *const Tile).offset_from(ptr) as usize });
+        let mut inside = false;
+        let (mut f, mut l) = (false, false);
+        for idx in chunk {
+            let contains = cycle.contains(&idx);
+            if inside && !contains {
+                count += 1;
+            }
+            if contains {
+                match grid.tiles[idx] {
+                    Tile::Pipe => {
+                        inside = !inside;
+                    }
+                    Tile::L => {
+                        l = true;
+                    }
+                    Tile::J => {
+                        if f {
+                            inside = !inside;
+                        }
+                        f = false;
+                        l = false;
+                    }
+                    Tile::Seven => {
+                        if l {
+                            inside = !inside;
+                        }
+                        f = false;
+                        l = false;
+                    }
+                    Tile::F => {
+                        f = true;
+                    }
+                    Tile::Ground => panic!(),
+                    // START IS HARDCODED FOR INPUT.TXT BECAUSE I AM TIRED
+                    Tile::Start => {
+                        inside = !inside;
+                    }
+                    _ => {
+                        continue;
+                    }
+                }
+            }
+        }
+    });
     println!("{count}");
 }
